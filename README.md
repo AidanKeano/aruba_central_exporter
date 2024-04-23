@@ -2,9 +2,18 @@
 
 <h4>/monitoring/v1/switches:</h4>
 
+- switch_client_count
 - switch_cpu_utilization
 - switch_usage
 - switch_uptime
+
+
+<h4>/monitoring/v2/aps:</h4>
+
+- ap_client_count
+- ap_cpu_utilization
+- ap_mem_free
+- ap_uptime
 
 
 
