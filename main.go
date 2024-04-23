@@ -25,7 +25,7 @@ type AccessPoint struct {
 	CpuUtilization     int      `json:"cpu_utilization"`
 	FirmwareVersion    string   `json:"firmware_version"`
 	GatewayClusterId   string   `json:"gateway_cluster_id"`
-	GatewayClusterNale string   `json:"gateway_cluster_name"`
+	GatewayClusterName string   `json:"gateway_cluster_name"`
 	GroupName          string   `json:"group_name"`
 	IpAddress          string   `json:"ip_address"`
 	Labels             []string `json:"labels"`
@@ -60,6 +60,33 @@ type AccessPoint struct {
 	SwarmMaster bool   `json:"swarm_master"`
 	SwarmName   string `json:"swarm_name"`
 	Uptime      int    `json:"uptime"`
+}
+
+type McResponse struct {
+	Count               int                  `json:"count"`
+	MobilityControllers []MobilityController `json:"mcs"`
+}
+
+type MobilityController struct {
+	CpuUtilization        int      `json:"cpu_utilization"`
+	FirmwareBackupVersion string   `json:"firmware_backup_version"`
+	FirmwareVersion       string   `json:"firmware_version"`
+	GroupName             string   `json:"group_name"`
+	IpAddress             string   `json:"ip_address"`
+	Labels                []string `json:"labels"`
+	MacRange              string   `json:"mac_range"`
+	MacAddress            string   `json:"macaddr"`
+	MemFree               int      `json:"mem_free"`
+	MemTotal              int      `json:"mem_total"`
+	Mode                  string   `json:"mode"`
+	Model                 string   `json:"model"`
+	Name                  string   `json:"name"`
+	RebootReason          string   `json:"reboot_reason"`
+	Role                  string   `json:"role"`
+	Serial                string   `json:"serial"`
+	Site                  string   `json:"site"`
+	Status                string   `json:"status"`
+	Uptime                int      `json:"uptime"`
 }
 
 type SwitchResponse struct {
@@ -113,7 +140,13 @@ var (
 	apClientCount    = prometheus.NewDesc("ap_client_count", "Number of clients connected to access point", []string{"name"}, nil)
 	apCpuUtilization = prometheus.NewDesc("ap_cpu_utilization", "CPU Utilization of the access point in percentge", []string{"name"}, nil)
 	apMemFree        = prometheus.NewDesc("ap_mem_free", "Amount of free memory of access point", []string{"name"}, nil)
+	apMemTotal       = prometheus.NewDesc("ap_mem_total", "Total amount of  memory of access point", []string{"name"}, nil)
 	apUptime         = prometheus.NewDesc("ap_uptime", "Uptime of the access point in seconds", []string{"name"}, nil)
+
+	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name"}, nil)
+	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name"}, nil)
+	mcMemTotal       = prometheus.NewDesc("mc_mem_total", "Total amount of  memory of mobility controller", []string{"name"}, nil)
+	mcUptime         = prometheus.NewDesc("mc_uptime", "Uptime of the mobility controller in seconds", []string{"name"}, nil)
 
 	switchClientCount    = prometheus.NewDesc("switch_client_count", "Number of clients connected to switch", []string{"name"}, nil)
 	switchCpuUtilization = prometheus.NewDesc("switch_cpu_utilization", "CPU Utilization of the switch in percentge", []string{"name"}, nil)
@@ -137,7 +170,13 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- apClientCount
 	ch <- apCpuUtilization
 	ch <- apMemFree
+	ch <- apMemTotal
 	ch <- apUptime
+
+	ch <- mcCpuUtilization
+	ch <- mcMemFree
+	ch <- mcMemTotal
+	ch <- mcUptime
 
 	ch <- switchClientCount
 	ch <- switchCpuUtilization
@@ -150,6 +189,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	refreshToken(e)
 	listSwitches(e, ch)
 	listAccessPoints(e, ch)
+	listMobilityControllers(e, ch)
 
 }
 
@@ -222,7 +262,52 @@ func listAccessPoints(e *Exporter, ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(apClientCount, prometheus.GaugeValue, float64(a.ClientCount), a.Name)
 		ch <- prometheus.MustNewConstMetric(apCpuUtilization, prometheus.GaugeValue, float64(a.CpuUtilization), a.Name)
 		ch <- prometheus.MustNewConstMetric(apMemFree, prometheus.GaugeValue, float64(a.MemFree), a.Name)
+		ch <- prometheus.MustNewConstMetric(apMemTotal, prometheus.GaugeValue, float64(a.MemTotal), a.Name)
 		ch <- prometheus.MustNewConstMetric(apUptime, prometheus.GaugeValue, float64(a.Uptime), a.Name)
+	}
+
+}
+
+func listMobilityControllers(e *Exporter, ch chan<- prometheus.Metric) {
+
+	url := e.arubaEndpoint + "monitoring/v1/mobility_controllers?calculate_total=false"
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+e.arubaAccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	// Parse JSON
+	var mcResponse McResponse
+	if err := json.Unmarshal(body, &mcResponse); err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+
+	for _, m := range mcResponse.MobilityControllers {
+
+		ch <- prometheus.MustNewConstMetric(mcCpuUtilization, prometheus.GaugeValue, float64(m.CpuUtilization), m.Name)
+		ch <- prometheus.MustNewConstMetric(mcMemFree, prometheus.GaugeValue, float64(m.MemFree), m.Name)
+		ch <- prometheus.MustNewConstMetric(mcMemTotal, prometheus.GaugeValue, float64(m.MemTotal), m.Name)
+		ch <- prometheus.MustNewConstMetric(mcUptime, prometheus.GaugeValue, float64(m.Uptime), m.Name)
 	}
 
 }

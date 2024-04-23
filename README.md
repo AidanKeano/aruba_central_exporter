@@ -7,12 +7,19 @@
 - switch_usage
 - switch_uptime
 
+<h4>/monitoring/v1/mobility_controllers:</h4>
+
+- mc_cpu_utilization
+- mc_mem_free
+- mc_mem_total
+- mc_uptime
 
 <h4>/monitoring/v2/aps:</h4>
 
 - ap_client_count
 - ap_cpu_utilization
 - ap_mem_free
+- ap_mem_total
 - ap_uptime
 
 
