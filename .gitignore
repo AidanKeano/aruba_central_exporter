@@ -1,3 +1,2 @@
-
-tokens.yaml
-client.yaml
+*.yaml
+*.yml

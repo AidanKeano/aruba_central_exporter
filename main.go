@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -195,31 +193,20 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 func main() {
 
-	arubaEndpoint := "https://apigw-eucentral3.central.arubanetworks.com/"
+	config := Config{}
+	readConfig(&config)
 
-	// Read tokens from YAML file
-	tokensFile, err := ioutil.ReadFile("tokens.yaml")
-
-	if err != nil {
-		fmt.Println("Error reading tokens from YAML file:", err)
-		return
-	}
-
-	tokens := make(map[string]string)
-	err = yaml.Unmarshal(tokensFile, &tokens)
-	if err != nil {
-		fmt.Println("Error unmarshaling tokens from YAML:", err)
-		return
-	}
-
-	arubaAccessToken := tokens["arubaAccessToken"]
-	arubaRefreshToken := tokens["arubaRefreshToken"]
+	arubaEndpoint := config.ArubaEndpoint
+	arubaAccessToken := config.ArubaTokens[0].ArubaAccessToken
+	arubaRefreshToken := config.ArubaTokens[1].ArubaRefreshToken
+	exporterEndpoint := config.ExporterConfig[0].ExporterEndpoint
+	exporterPort := config.ExporterConfig[1].ExporterPort
 
 	exporter := NewExporter(arubaEndpoint, arubaAccessToken, arubaRefreshToken)
 	prometheus.MustRegister(exporter)
 
-	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":8080", nil)
+	http.Handle(exporterEndpoint, promhttp.Handler())
+	http.ListenAndServe(exporterPort, nil)
 
 }
 
@@ -358,23 +345,11 @@ func listSwitches(e *Exporter, ch chan<- prometheus.Metric) {
 
 func refreshToken(e *Exporter) {
 
-	// Read tokens from YAML file
-	tokensFile, err := ioutil.ReadFile("client.yaml")
+	config := Config{}
+	readConfig(&config)
 
-	if err != nil {
-		fmt.Println("Error reading client data from YAML file:", err)
-		return
-	}
-
-	tokens := make(map[string]string)
-	err = yaml.Unmarshal(tokensFile, &tokens)
-	if err != nil {
-		fmt.Println("Error unmarshaling client data from YAML:", err)
-		return
-	}
-
-	clientId := tokens["clientId"]
-	clientSecret := tokens["clientSecret"]
+	clientId := config.ArubaApplicationCredentials[0].ClientID
+	clientSecret := config.ArubaApplicationCredentials[1].ClientSecret
 
 	url := e.arubaEndpoint + "oauth2/token?client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=refresh_token&refresh_token=" + e.arubaRefreshToken
 
@@ -412,24 +387,21 @@ func refreshToken(e *Exporter) {
 	e.arubaAccessToken = tokenResponse.AccessToken
 	e.arubaRefreshToken = tokenResponse.RefreshToken
 
-	// Write tokens to YAML file
-	if e.arubaAccessToken != "" && e.arubaRefreshToken != "" {
-		tokens := map[string]string{
-			"arubaAccessToken":  e.arubaAccessToken,
-			"arubaRefreshToken": e.arubaRefreshToken,
-		}
+	configData := []byte(`arubaEndpoint: "` + config.ArubaEndpoint + `"
+arubaTokens:
+  - arubaAccessToken: "` + config.ArubaTokens[0].ArubaAccessToken + `"
+  - arubaRefreshToken: "` + config.ArubaTokens[1].ArubaRefreshToken + `"
+arubaApplicationCredentials:
+  - clientId: "` + config.ArubaApplicationCredentials[0].ClientID + `"
+  - clientSecret: "` + config.ArubaApplicationCredentials[1].ClientSecret + `"
+exporterConfig:
+  - exporterEndpoint: "` + config.ExporterConfig[0].ExporterEndpoint + `"
+  - exporterPort: "` + config.ExporterConfig[1].ExporterPort + `" `)
 
-		data, err := yaml.Marshal(tokens)
-		if err != nil {
-			fmt.Println("Error marshaling tokens to YAML:", err)
-			return
-		}
+	err = ioutil.WriteFile("exporter_config.yaml", configData, 0644)
 
-		err = ioutil.WriteFile("tokens.yaml", data, 0644)
-		if err != nil {
-			fmt.Println("Error writing tokens to YAML file:", err)
-			return
-		}
+	if err != nil {
+		fmt.Println("Error writing config file:", err)
 	}
 
 }

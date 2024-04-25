@@ -29,16 +29,17 @@
 
 ./aruba_central_exporter
 
-The credentials necessary to authenticate with Aruba Central should be located in two seperate yaml files located in the same directory as the exporter. The first should be named client.yaml and contain the client id and client secret created from aruba central.
+The configuration options should be specified in the exporter_config.yaml file in the same directory as the exporter. The application reads the necessary credentials and configuration options from this file, and also writes the new token values to the file (as each access token expires after 2 hours)
 
-<h4>client.yaml:</h4>
+<h4>exporter_config.yaml</h4>
 
-	clientId: client-id-goes-here
-	clientSecret: client-secret-goes-here
-
-For the other file named tokens.yaml, the initial access and refresh tokens obtained from the Aruba Central API Gateway should be entered here. This application will overwrite this data after refreshing tokens, as each token expires after two hours.
-
-<h4>tokens.yaml:</h4>
-
-	arubaAccessToken: aruba-access-token-goes-here
-	arubaRefreshToken: aruba-refresh-token-goes-here
+	arubaEndpoint: "https://apigw-eucentral3.central.arubanetworks.com/" //Replace with alternative endpoint if necessary
+	arubaTokens:
+	- arubaAccessToken: "aruba-access-token-goes-here"
+	- arubaRefreshToken: "aruba-refresh-token-goes-here"
+	arubaApplicationCredentials:
+	- clientId: "aruba-application-client-id-goes-here"
+	- clientSecret: "aruba-application-client-secret-goes-here"
+	exporterConfig:
+	- exporterEndpoint: "/metrics" //Replace with alternative endpoint directory if necessary
+	- exporterPort: ":8080" //Choose whatever port you wish here
