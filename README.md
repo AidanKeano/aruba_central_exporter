@@ -35,11 +35,11 @@ The configuration options should be specified in the exporter_config.yaml file i
 
 	arubaEndpoint: "https://apigw-eucentral3.central.arubanetworks.com/" //Replace with alternative endpoint if necessary
 	arubaTokens:
-	- arubaAccessToken: "aruba-access-token-goes-here"
-	- arubaRefreshToken: "aruba-refresh-token-goes-here"
+	  - arubaAccessToken: "aruba-access-token-goes-here"
+	  - arubaRefreshToken: "aruba-refresh-token-goes-here"
 	arubaApplicationCredentials:
-	- clientId: "aruba-application-client-id-goes-here"
-	- clientSecret: "aruba-application-client-secret-goes-here"
+	  - clientId: "aruba-application-client-id-goes-here"
+	  - clientSecret: "aruba-application-client-secret-goes-here"
 	exporterConfig:
-	- exporterEndpoint: "/metrics" //Replace with alternative endpoint directory if necessary
-	- exporterPort: ":8080" //Choose whatever port you wish here
+	  - exporterEndpoint: "/metrics" //Replace with alternative endpoint directory if necessary
+	  - exporterPort: ":8080" //Choose whatever port you wish here
