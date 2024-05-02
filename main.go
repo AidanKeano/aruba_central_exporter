@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -135,21 +136,26 @@ type TokenResponse struct {
 }
 
 var (
-	apClientCount    = prometheus.NewDesc("ap_client_count", "Number of clients connected to access point", []string{"name"}, nil)
-	apCpuUtilization = prometheus.NewDesc("ap_cpu_utilization", "CPU Utilization of the access point in percentge", []string{"name"}, nil)
-	apMemFree        = prometheus.NewDesc("ap_mem_free", "Amount of free memory of access point", []string{"name"}, nil)
-	apMemTotal       = prometheus.NewDesc("ap_mem_total", "Total amount of  memory of access point", []string{"name"}, nil)
-	apUptime         = prometheus.NewDesc("ap_uptime", "Uptime of the access point in seconds", []string{"name"}, nil)
+	apClientCount    = prometheus.NewDesc("ap_client_count", "Number of clients connected to access point", []string{"name", "groupName", "site", "status"}, nil)
+	apCpuUtilization = prometheus.NewDesc("ap_cpu_utilization", "CPU Utilization of the access point in percentge", []string{"name", "groupName", "site", "status"}, nil)
+	apMemFree        = prometheus.NewDesc("ap_mem_free", "Amount of free memory of access point", []string{"name", "groupName", "site", "status"}, nil)
+	apMemTotal       = prometheus.NewDesc("ap_mem_total", "Total amount of  memory of access point", []string{"name", "groupName", "site", "status"}, nil)
+	apUptime         = prometheus.NewDesc("ap_uptime", "Uptime of the access point in seconds", []string{"name", "groupName", "site", "status"}, nil)
 
-	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name"}, nil)
-	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name"}, nil)
-	mcMemTotal       = prometheus.NewDesc("mc_mem_total", "Total amount of  memory of mobility controller", []string{"name"}, nil)
-	mcUptime         = prometheus.NewDesc("mc_uptime", "Uptime of the mobility controller in seconds", []string{"name"}, nil)
+	apRadioTxPower     = prometheus.NewDesc("ap_radio_tx_power", "Radio tx power", []string{"band", "channel", "radioName", "apName"}, nil)
+	apRadioUtilization = prometheus.NewDesc("ap_radio_utilization", "Radip cpu utilization", []string{"band", "channel", "radioName", "apName"}, nil)
 
-	switchClientCount    = prometheus.NewDesc("switch_client_count", "Number of clients connected to switch", []string{"name"}, nil)
-	switchCpuUtilization = prometheus.NewDesc("switch_cpu_utilization", "CPU Utilization of the switch in percentge", []string{"name"}, nil)
-	switchUsage          = prometheus.NewDesc("switch_usage", "Bandwidth usage of the switch", []string{"name"}, nil)
-	switchUptime         = prometheus.NewDesc("switch_uptime", "Uptime of the switch in seconds", []string{"name"}, nil)
+	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
+	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
+	mcMemTotal       = prometheus.NewDesc("mc_mem_total", "Total amount of  memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
+	mcUptime         = prometheus.NewDesc("mc_uptime", "Uptime of the mobility controller in seconds", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
+
+	switchClientCount    = prometheus.NewDesc("switch_client_count", "Number of clients connected to switch", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
+	switchCpuUtilization = prometheus.NewDesc("switch_cpu_utilization", "Current Switch CPU utilization percentage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
+	switchMemFree        = prometheus.NewDesc("switch_mem_free", "Switch free memory", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
+	switchMemTotal       = prometheus.NewDesc("switch_mem_total", "Switch total memory", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
+	switchUsage          = prometheus.NewDesc("switch_usage", "Switch uptime", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
+	switchUptime         = prometheus.NewDesc("switch_uptime", "Switch usage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
 )
 
 type Exporter struct {
@@ -171,6 +177,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- apMemTotal
 	ch <- apUptime
 
+	ch <- apRadioTxPower
+	ch <- apRadioUtilization
+
 	ch <- mcCpuUtilization
 	ch <- mcMemFree
 	ch <- mcMemTotal
@@ -178,6 +187,8 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 
 	ch <- switchClientCount
 	ch <- switchCpuUtilization
+	ch <- switchMemFree
+	ch <- switchMemTotal
 	ch <- switchUsage
 	ch <- switchUptime
 }
@@ -246,11 +257,17 @@ func listAccessPoints(e *Exporter, ch chan<- prometheus.Metric) {
 
 	for _, a := range apResponse.AccessPoints {
 
-		ch <- prometheus.MustNewConstMetric(apClientCount, prometheus.GaugeValue, float64(a.ClientCount), a.Name)
-		ch <- prometheus.MustNewConstMetric(apCpuUtilization, prometheus.GaugeValue, float64(a.CpuUtilization), a.Name)
-		ch <- prometheus.MustNewConstMetric(apMemFree, prometheus.GaugeValue, float64(a.MemFree), a.Name)
-		ch <- prometheus.MustNewConstMetric(apMemTotal, prometheus.GaugeValue, float64(a.MemTotal), a.Name)
-		ch <- prometheus.MustNewConstMetric(apUptime, prometheus.GaugeValue, float64(a.Uptime), a.Name)
+		ch <- prometheus.MustNewConstMetric(apClientCount, prometheus.GaugeValue, float64(a.ClientCount), a.Name, a.GroupName, a.Site, a.Status)
+		ch <- prometheus.MustNewConstMetric(apCpuUtilization, prometheus.GaugeValue, float64(a.CpuUtilization), a.Name, a.GroupName, a.Site, a.Status)
+		ch <- prometheus.MustNewConstMetric(apMemFree, prometheus.GaugeValue, float64(a.MemFree), a.Name, a.GroupName, a.Site, a.Status)
+		ch <- prometheus.MustNewConstMetric(apMemTotal, prometheus.GaugeValue, float64(a.MemTotal), a.Name, a.GroupName, a.Site, a.Status)
+		ch <- prometheus.MustNewConstMetric(apUptime, prometheus.GaugeValue, float64(a.Uptime), a.Name, a.GroupName, a.Site, a.Status)
+
+		for _, r := range a.Radios {
+
+			ch <- prometheus.MustNewConstMetric(apRadioTxPower, prometheus.GaugeValue, float64(r.TxPower), strconv.Itoa(r.Band), r.Channel, r.RadioName, a.Name)
+			ch <- prometheus.MustNewConstMetric(apRadioUtilization, prometheus.GaugeValue, float64(r.Utilization), strconv.Itoa(r.Band), r.Channel, r.RadioName, a.Name)
+		}
 	}
 
 }
@@ -291,10 +308,10 @@ func listMobilityControllers(e *Exporter, ch chan<- prometheus.Metric) {
 
 	for _, m := range mcResponse.MobilityControllers {
 
-		ch <- prometheus.MustNewConstMetric(mcCpuUtilization, prometheus.GaugeValue, float64(m.CpuUtilization), m.Name)
-		ch <- prometheus.MustNewConstMetric(mcMemFree, prometheus.GaugeValue, float64(m.MemFree), m.Name)
-		ch <- prometheus.MustNewConstMetric(mcMemTotal, prometheus.GaugeValue, float64(m.MemTotal), m.Name)
-		ch <- prometheus.MustNewConstMetric(mcUptime, prometheus.GaugeValue, float64(m.Uptime), m.Name)
+		ch <- prometheus.MustNewConstMetric(mcCpuUtilization, prometheus.GaugeValue, float64(m.CpuUtilization), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status)
+		ch <- prometheus.MustNewConstMetric(mcMemFree, prometheus.GaugeValue, float64(m.MemFree), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status)
+		ch <- prometheus.MustNewConstMetric(mcMemTotal, prometheus.GaugeValue, float64(m.MemTotal), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status)
+		ch <- prometheus.MustNewConstMetric(mcUptime, prometheus.GaugeValue, float64(m.Uptime), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status)
 	}
 
 }
@@ -336,10 +353,12 @@ func listSwitches(e *Exporter, ch chan<- prometheus.Metric) {
 
 	for _, s := range switchResponse.Switches {
 
-		ch <- prometheus.MustNewConstMetric(switchClientCount, prometheus.GaugeValue, float64(s.ClientCount), s.Name+"_"+s.MacAddress)
-		ch <- prometheus.MustNewConstMetric(switchCpuUtilization, prometheus.GaugeValue, float64(s.CPUUtilization), s.Name+"_"+s.MacAddress)
-		ch <- prometheus.MustNewConstMetric(switchUsage, prometheus.GaugeValue, float64(s.Usage), s.Name+"_"+s.MacAddress)
-		ch <- prometheus.MustNewConstMetric(switchUptime, prometheus.GaugeValue, float64(s.Uptime), s.Name+"_"+s.MacAddress)
+		ch <- prometheus.MustNewConstMetric(switchClientCount, prometheus.GaugeValue, float64(s.ClientCount), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
+		ch <- prometheus.MustNewConstMetric(switchCpuUtilization, prometheus.GaugeValue, float64(s.CPUUtilization), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
+		ch <- prometheus.MustNewConstMetric(switchMemFree, prometheus.GaugeValue, float64(s.ClientCount), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
+		ch <- prometheus.MustNewConstMetric(switchMemTotal, prometheus.GaugeValue, float64(s.ClientCount), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
+		ch <- prometheus.MustNewConstMetric(switchUsage, prometheus.GaugeValue, float64(s.Usage), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
+		ch <- prometheus.MustNewConstMetric(switchUptime, prometheus.GaugeValue, float64(s.Uptime), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
 	}
 }
 
@@ -389,8 +408,8 @@ func refreshToken(e *Exporter) {
 
 	configData := []byte(`arubaEndpoint: "` + config.ArubaEndpoint + `"
 arubaTokens:
-  - arubaAccessToken: "` + config.ArubaTokens[0].ArubaAccessToken + `"
-  - arubaRefreshToken: "` + config.ArubaTokens[1].ArubaRefreshToken + `"
+  - arubaAccessToken: "` + e.arubaAccessToken + `"
+  - arubaRefreshToken: "` + e.arubaRefreshToken + `"
 arubaApplicationCredentials:
   - clientId: "` + config.ArubaApplicationCredentials[0].ClientID + `"
   - clientSecret: "` + config.ArubaApplicationCredentials[1].ClientSecret + `"
