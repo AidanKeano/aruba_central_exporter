@@ -136,6 +136,17 @@ type TokenResponse struct {
 	ExpiresIn    int    `json:"expires_in"`
 }
 
+type TopNClientResponse struct {
+	Clients []Client `json:"clients"`
+}
+
+type Client struct {
+	MacAddress  string `json:"macaddr"`
+	Name        string `json:"name"`
+	RxDataBytes int    `json:"rx_data_bytes"`
+	TxDataBytes int    `json:"tx_data_bytes"`
+}
+
 var (
 	apClientCount    = prometheus.NewDesc("ap_client_count", "Number of clients connected to access point", []string{"name", "groupName", "site", "status"}, nil)
 	apCpuUtilization = prometheus.NewDesc("ap_cpu_utilization", "CPU Utilization of the access point in percentge", []string{"name", "groupName", "site", "status"}, nil)
@@ -145,6 +156,9 @@ var (
 
 	apRadioTxPower     = prometheus.NewDesc("ap_radio_tx_power", "Radio tx power", []string{"band", "channel", "radioName", "apName"}, nil)
 	apRadioUtilization = prometheus.NewDesc("ap_radio_utilization", "Radip cpu utilization", []string{"band", "channel", "radioName", "apName"}, nil)
+
+	clientRxDataBytes = prometheus.NewDesc("client_rx_data_bytes", "Volume of data received", []string{"name"}, nil)
+	clientTxDataBytes = prometheus.NewDesc("client_tx_data_bytes", "Volume of data transmitted", []string{"name"}, nil)
 
 	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
 	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
@@ -183,6 +197,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- apRadioTxPower
 	ch <- apRadioUtilization
 
+	ch <- clientRxDataBytes
+	ch <- clientTxDataBytes
+
 	ch <- mcCpuUtilization
 	ch <- mcMemFree
 	ch <- mcMemTotal
@@ -208,6 +225,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	listSwitches(e, ch)
 	listAccessPoints(e, ch)
 	listMobilityControllers(e, ch)
+	listTopClients(e, ch)
+
 }
 
 func main() {
@@ -369,6 +388,50 @@ func listSwitches(e *Exporter, ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(switchUsage, prometheus.GaugeValue, float64(s.Usage), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
 		ch <- prometheus.MustNewConstMetric(switchUptime, prometheus.GaugeValue, float64(s.Uptime), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status)
 	}
+}
+
+func listTopClients(e *Exporter, ch chan<- prometheus.Metric) {
+
+	url := e.arubaEndpoint + "monitoring/v1/clients/bandwidth_usage/topn?count=100"
+
+	// Create a new HTTP GET request
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+e.arubaAccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	// Parse JSON
+	var topNClientResponse TopNClientResponse
+	if err := json.Unmarshal(body, &topNClientResponse); err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+
+	for _, t := range topNClientResponse.Clients {
+
+		ch <- prometheus.MustNewConstMetric(clientRxDataBytes, prometheus.GaugeValue, float64(t.RxDataBytes), t.Name)
+		ch <- prometheus.MustNewConstMetric(clientTxDataBytes, prometheus.GaugeValue, float64(t.TxDataBytes), t.Name)
+
+	}
+
 }
 
 func refreshToken(e *Exporter) {

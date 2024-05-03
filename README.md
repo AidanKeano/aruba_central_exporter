@@ -4,8 +4,15 @@
 
 - switch_client_count
 - switch_cpu_utilization
+- switch_mem_free
+- switch_mem_total
 - switch_usage
 - switch_uptime
+
+<h4>/monitoring/v2/clients:</h4>
+
+- client_rx_data_bytes
+- client_tx_data_bytes
 
 <h4>/monitoring/v1/mobility_controllers:</h4>
 
@@ -21,7 +28,6 @@
 - ap_mem_free
 - ap_mem_total
 - ap_uptime
-
 
 
 ***
@@ -45,3 +51,9 @@ The configuration options should be specified in the exporter_config.yaml file i
 	  - exporterPort: ":8080"
 
 The arubaEndpoint, exporterEndpoint and exporterPort values should also be amended to fit the required configuration.
+
+***
+
+<h3>Prometheus Configuration:</h3>
+
+For Prometheus configuration, it should be noted that the scraping interval greatly depends on the daily API call limite which difers per organisation. Each time the data is scraped, 4 API calls are made, inlcuding an additional 12 API calls per day tor refresh tokens
