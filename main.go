@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -156,6 +157,8 @@ var (
 	switchMemTotal       = prometheus.NewDesc("switch_mem_total", "Switch total memory", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
 	switchUsage          = prometheus.NewDesc("switch_usage", "Switch uptime", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
 	switchUptime         = prometheus.NewDesc("switch_uptime", "Switch usage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status"}, nil)
+
+	expiresIn = 0
 )
 
 type Exporter struct {
@@ -193,17 +196,23 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- switchUptime
 }
 
-func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+func decrementExpiresIn() {
+	for {
+		time.Sleep(time.Second)
+		expiresIn--
+	}
+}
 
+func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	refreshToken(e)
 	listSwitches(e, ch)
 	listAccessPoints(e, ch)
 	listMobilityControllers(e, ch)
-
 }
 
 func main() {
 
+	go decrementExpiresIn()
 	config := Config{}
 	readConfig(&config)
 
@@ -364,49 +373,53 @@ func listSwitches(e *Exporter, ch chan<- prometheus.Metric) {
 
 func refreshToken(e *Exporter) {
 
-	config := Config{}
-	readConfig(&config)
+	if expiresIn < 60 {
 
-	clientId := config.ArubaApplicationCredentials[0].ClientID
-	clientSecret := config.ArubaApplicationCredentials[1].ClientSecret
+		config := Config{}
+		readConfig(&config)
 
-	url := e.arubaEndpoint + "oauth2/token?client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=refresh_token&refresh_token=" + e.arubaRefreshToken
+		clientId := config.ArubaApplicationCredentials[0].ClientID
+		clientSecret := config.ArubaApplicationCredentials[1].ClientSecret
 
-	req, err := http.NewRequest("POST", url, nil)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
+		url := e.arubaEndpoint + "oauth2/token?client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=refresh_token&refresh_token=" + e.arubaRefreshToken
 
-	}
+		req, err := http.NewRequest("POST", url, nil)
+		if err != nil {
+			fmt.Println("Error creating request:", err)
 
-	req.Header.Set("Authorization", "Bearer "+e.arubaAccessToken)
-	req.Header.Set("Content-Type", "application/json")
+		}
 
-	client := &http.Client{}
+		req.Header.Set("Authorization", "Bearer "+e.arubaAccessToken)
+		req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-	}
+		client := &http.Client{}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println("Error sending request:", err)
+		}
 
-	}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error reading response body:", err)
 
-	// Parse JSON
+		}
 
-	var tokenResponse TokenResponse
+		// Parse JSON
 
-	if err := json.Unmarshal(body, &tokenResponse); err != nil {
-		fmt.Println("Error parsing JSON:", err)
+		var tokenResponse TokenResponse
 
-	}
+		if err := json.Unmarshal(body, &tokenResponse); err != nil {
+			fmt.Println("Error parsing JSON:", err)
 
-	e.arubaAccessToken = tokenResponse.AccessToken
-	e.arubaRefreshToken = tokenResponse.RefreshToken
+		}
 
-	configData := []byte(`arubaEndpoint: "` + config.ArubaEndpoint + `"
+		expiresIn = tokenResponse.ExpiresIn
+
+		e.arubaAccessToken = tokenResponse.AccessToken
+		e.arubaRefreshToken = tokenResponse.RefreshToken
+
+		configData := []byte(`arubaEndpoint: "` + config.ArubaEndpoint + `"
 arubaTokens:
   - arubaAccessToken: "` + e.arubaAccessToken + `"
   - arubaRefreshToken: "` + e.arubaRefreshToken + `"
@@ -417,10 +430,11 @@ exporterConfig:
   - exporterEndpoint: "` + config.ExporterConfig[0].ExporterEndpoint + `"
   - exporterPort: "` + config.ExporterConfig[1].ExporterPort + `" `)
 
-	err = ioutil.WriteFile("exporter_config.yaml", configData, 0644)
+		err = ioutil.WriteFile("exporter_config.yaml", configData, 0644)
 
-	if err != nil {
-		fmt.Println("Error writing config file:", err)
+		if err != nil {
+			fmt.Println("Error writing config file:", err)
+		}
 	}
 
 }
