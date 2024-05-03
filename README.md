@@ -56,4 +56,4 @@ The arubaEndpoint, exporterEndpoint and exporterPort values should also be amend
 
 <h3>Prometheus Configuration:</h3>
 
-For Prometheus configuration, it should be noted that the scraping interval greatly depends on the daily API call limite which difers per organisation. Each time the data is scraped, 4 API calls are made, inlcuding an additional 12 API calls per day tor refresh tokens
+For Prometheus configuration, it should be noted that the scraping interval greatly depends on the daily API call limite which difers per organisation. Each time the data is scraped, 4 API calls are made, inlcuding an additional 12 API calls per day for refresh tokens
