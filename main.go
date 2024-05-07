@@ -245,7 +245,16 @@ func main() {
 	prometheus.MustRegister(exporter)
 
 	http.Handle(exporterEndpoint, promhttp.Handler())
-	http.ListenAndServe(exporterPort, nil)
+
+	err := http.ListenAndServe(exporterPort, nil)
+
+	if err != nil {
+		if err.Error() == "listen tcp :8080: bind: address already in use" {
+			fmt.Println("Error: Port", exporterPort, "is already in use.")
+		} else {
+			fmt.Println("Error starting server:", err)
+		}
+	}
 
 }
 
