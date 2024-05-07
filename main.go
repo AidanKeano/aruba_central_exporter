@@ -157,8 +157,8 @@ var (
 	apRadioTxPower     = prometheus.NewDesc("ap_radio_tx_power", "Radio tx power", []string{"band", "channel", "radioName", "apName"}, nil)
 	apRadioUtilization = prometheus.NewDesc("ap_radio_utilization", "Radip cpu utilization", []string{"band", "channel", "radioName", "apName"}, nil)
 
-	clientRxDataBytes = prometheus.NewDesc("client_rx_data_bytes", "Volume of data received", []string{"name"}, nil)
-	clientTxDataBytes = prometheus.NewDesc("client_tx_data_bytes", "Volume of data transmitted", []string{"name"}, nil)
+	clientRxDataBytes = prometheus.NewDesc("client_rx_data_bytes", "Volume of data received", []string{"name", "mac"}, nil)
+	clientTxDataBytes = prometheus.NewDesc("client_tx_data_bytes", "Volume of data transmitted", []string{"name", "mac"}, nil)
 
 	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
 	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status"}, nil)
@@ -427,8 +427,8 @@ func listTopClients(e *Exporter, ch chan<- prometheus.Metric) {
 
 	for _, t := range topNClientResponse.Clients {
 
-		ch <- prometheus.MustNewConstMetric(clientRxDataBytes, prometheus.GaugeValue, float64(t.RxDataBytes), t.Name)
-		ch <- prometheus.MustNewConstMetric(clientTxDataBytes, prometheus.GaugeValue, float64(t.TxDataBytes), t.Name)
+		ch <- prometheus.MustNewConstMetric(clientRxDataBytes, prometheus.GaugeValue, float64(t.RxDataBytes), t.Name, t.MacAddress)
+		ch <- prometheus.MustNewConstMetric(clientTxDataBytes, prometheus.GaugeValue, float64(t.TxDataBytes), t.Name, t.MacAddress)
 
 	}
 
