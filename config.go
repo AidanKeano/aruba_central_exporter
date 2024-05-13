@@ -23,9 +23,9 @@ type Config struct {
 	} `yaml:"exporterConfig"`
 }
 
-func readConfig(c *Config) {
+func readConfig(c *Config, configPath string) {
 	// Read the YAML file
-	data, err := ioutil.ReadFile("exporter_config.yaml")
+	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		log.Fatal(err)
 	}

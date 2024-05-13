@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -172,7 +173,8 @@ var (
 	switchUsage          = prometheus.NewDesc("switch_usage", "Switch uptime", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
 	switchUptime         = prometheus.NewDesc("switch_uptime", "Switch usage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
 
-	expiresIn = 0
+	expiresIn  = 0
+	configFile = "exporter_config.yaml"
 )
 
 type Exporter struct {
@@ -232,8 +234,18 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 func main() {
 
 	go decrementExpiresIn()
+
+	// Parse command line arguments
+	configFile := os.Args[1]
+
+	// set defaimt config file
+	if configFile == "" {
+		configFile = "exporter_config.yaml"
+		return
+	}
+
 	config := Config{}
-	readConfig(&config)
+	readConfig(&config, configFile)
 
 	arubaEndpoint := config.ArubaEndpoint
 	arubaAccessToken := config.ArubaTokens[0].ArubaAccessToken
@@ -448,7 +460,7 @@ func refreshToken(e *Exporter) {
 	if expiresIn < 60 {
 
 		config := Config{}
-		readConfig(&config)
+		readConfig(&config, configFile)
 
 		clientId := config.ArubaApplicationCredentials[0].ClientID
 		clientSecret := config.ArubaApplicationCredentials[1].ClientSecret
