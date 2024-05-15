@@ -1,3 +1,26 @@
+<h3>Usage:</h3>
+
+./aruba_central_exporter [config_file]
+
+If no configuration file is specified then the default of exporter_config.yaml will be assumed. The application reads the necessary credentials and configuration options from this file, and also writes the new token values to the file (as each access token expires after 2 hours)
+
+<h4>exporter_config.yaml</h4>
+
+	arubaEndpoint: "https://apigw-eucentral3.central.arubanetworks.com/"
+	arubaTokens:
+	  - arubaAccessToken: "aruba-access-token-goes-here"
+	  - arubaRefreshToken: "aruba-refresh-token-goes-here"
+	arubaApplicationCredentials:
+	  - clientId: "aruba-application-client-id-goes-here"
+	  - clientSecret: "aruba-application-client-secret-goes-here"
+	exporterConfig:
+	  - exporterEndpoint: "/metrics"
+	  - exporterPort: ":8080"
+
+The arubaEndpoint, exporterEndpoint and exporterPort values should also be amended to fit the required configuration.
+
+***
+
 <h3>Metrics:</h3>
 
 <h4>/monitoring/v1/switches:</h4>
@@ -31,29 +54,8 @@
 
 
 ***
-<h3>Usage:</h3>
-
-./aruba_central_exporter
-
-The configuration options should be specified in the exporter_config.yaml file in the same directory as the exporter. The application reads the necessary credentials and configuration options from this file, and also writes the new token values to the file (as each access token expires after 2 hours)
-
-<h4>exporter_config.yaml</h4>
-
-	arubaEndpoint: "https://apigw-eucentral3.central.arubanetworks.com/"
-	arubaTokens:
-	  - arubaAccessToken: "aruba-access-token-goes-here"
-	  - arubaRefreshToken: "aruba-refresh-token-goes-here"
-	arubaApplicationCredentials:
-	  - clientId: "aruba-application-client-id-goes-here"
-	  - clientSecret: "aruba-application-client-secret-goes-here"
-	exporterConfig:
-	  - exporterEndpoint: "/metrics"
-	  - exporterPort: ":8080"
-
-The arubaEndpoint, exporterEndpoint and exporterPort values should also be amended to fit the required configuration.
-
-***
 
 <h3>Prometheus Configuration:</h3>
 
-For Prometheus configuration, it should be noted that the scraping interval greatly depends on the daily API call limite which difers per organisation. Each time the data is scraped, 4 API calls are made, inlcuding an additional 12 API calls per day for refresh tokens
+For Prometheus configuration, it should be noted that the scraping interval greatly depends on the daily API call limit which difers per organisation. Each time the data is scraped, 4 API calls are made, inlcuding an additional 12 API calls per day for refresh tokens
+
