@@ -161,10 +161,10 @@ var (
 	clientRxDataBytes = prometheus.NewDesc("client_rx_data_bytes", "Volume of data received", []string{"name", "mac"}, nil)
 	clientTxDataBytes = prometheus.NewDesc("client_tx_data_bytes", "Volume of data transmitted", []string{"name", "mac"}, nil)
 
-	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion", "model"}, nil)
-	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion", "model"}, nil)
-	mcMemTotal       = prometheus.NewDesc("mc_mem_total", "Total amount of  memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion", "model"}, nil)
-	mcUptime         = prometheus.NewDesc("mc_uptime", "Uptime of the mobility controller in seconds", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion", "model"}, nil)
+	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
+	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
+	mcMemTotal       = prometheus.NewDesc("mc_mem_total", "Total amount of  memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
+	mcUptime         = prometheus.NewDesc("mc_uptime", "Uptime of the mobility controller in seconds", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
 
 	switchClientCount    = prometheus.NewDesc("switch_client_count", "Number of clients connected to switch", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
 	switchCpuUtilization = prometheus.NewDesc("switch_cpu_utilization", "Current Switch CPU utilization percentage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
@@ -236,12 +236,12 @@ func main() {
 	go decrementExpiresIn()
 
 	// Parse command line arguments
-	configFile := os.Args[1]
 
-	// set defaimt config file
-	if configFile == "" {
-		configFile = "exporter_config.yaml"
-		return
+	if len(os.Args) > 2 {
+		fmt.Println("Usage: exporter [config file]")
+	}
+	if len(os.Args) == 2 {
+		configFile = os.Args[1]
 	}
 
 	config := Config{}
@@ -255,6 +255,7 @@ func main() {
 
 	exporter := NewExporter(arubaEndpoint, arubaAccessToken, arubaRefreshToken)
 	prometheus.MustRegister(exporter)
+	fmt.Println("Registering exporter on", exporterEndpoint)
 
 	http.Handle(exporterEndpoint, promhttp.Handler())
 
@@ -267,6 +268,8 @@ func main() {
 			fmt.Println("Error starting server:", err)
 		}
 	}
+
+	fmt.Println("Server started on port", exporterPort)
 
 }
 
@@ -357,10 +360,10 @@ func listMobilityControllers(e *Exporter, ch chan<- prometheus.Metric) {
 
 	for _, m := range mcResponse.MobilityControllers {
 
-		ch <- prometheus.MustNewConstMetric(mcCpuUtilization, prometheus.GaugeValue, float64(m.CpuUtilization), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion, m.Model)
-		ch <- prometheus.MustNewConstMetric(mcMemFree, prometheus.GaugeValue, float64(m.MemFree), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion, m.Model)
-		ch <- prometheus.MustNewConstMetric(mcMemTotal, prometheus.GaugeValue, float64(m.MemTotal), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion, m.Model)
-		ch <- prometheus.MustNewConstMetric(mcUptime, prometheus.GaugeValue, float64(m.Uptime), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion, m.Model)
+		ch <- prometheus.MustNewConstMetric(mcCpuUtilization, prometheus.GaugeValue, float64(m.CpuUtilization), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion)
+		ch <- prometheus.MustNewConstMetric(mcMemFree, prometheus.GaugeValue, float64(m.MemFree), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion)
+		ch <- prometheus.MustNewConstMetric(mcMemTotal, prometheus.GaugeValue, float64(m.MemTotal), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion)
+		ch <- prometheus.MustNewConstMetric(mcUptime, prometheus.GaugeValue, float64(m.Uptime), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion)
 	}
 
 }

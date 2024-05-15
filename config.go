@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -35,5 +36,7 @@ func readConfig(c *Config, configPath string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println("Reading confugration from file: ", configPath)
 
 }
