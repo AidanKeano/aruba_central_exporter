@@ -53,6 +53,8 @@ The arubaEndpoint, exporterEndpoint and exporterPort values should also be amend
 
 - ap_client_count
 - ap_cpu_utilization
+- ap_radio_tx_power
+- ap_radio_utilization
 - ap_mem_free
 - ap_mem_total
 - ap_uptime
