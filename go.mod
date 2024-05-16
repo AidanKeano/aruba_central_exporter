@@ -1,4 +1,4 @@
-module github.com/ClashKeano/aruba_central_exporter
+module github.com/AidanKeano/aruba_central_exporter
 
 go 1.22.2
 
