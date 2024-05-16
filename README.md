@@ -1,6 +1,10 @@
 <h3>Usage:</h3>
 
-./aruba_central_exporter [config_file]
+Usage: ./aruba_exporter [options]
+Options:
+  -f string
+        Specify config file (default "exporter_config.yaml")
+  -v    Enable verbose mode - prints HTTP status code and response headers to the terminal
 
 If no configuration file is specified then the default of exporter_config.yaml will be assumed. The application reads the necessary credentials and configuration options from this file, and also writes the new token values to the file (as each access token expires after 2 hours)
 

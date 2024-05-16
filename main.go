@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -174,7 +174,8 @@ var (
 	switchUptime         = prometheus.NewDesc("switch_uptime", "Switch usage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
 
 	expiresIn  = 0
-	configFile = "exporter_config.yaml"
+	configFile string
+	verbose    bool
 )
 
 type Exporter struct {
@@ -231,18 +232,23 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 }
 
+func init() {
+
+	flag.BoolVar(&verbose, "v", false, "Enable verbose mode")
+	flag.StringVar(&configFile, "f", "exporter_config.yaml", "Specify config file")
+
+	flag.Usage = func() {
+		fmt.Println("Usage: aruba_exporter [options]")
+		fmt.Println("Options:")
+		flag.PrintDefaults()
+	}
+}
+
 func main() {
 
+	flag.Parse()
+
 	go decrementExpiresIn()
-
-	// Parse command line arguments
-
-	if len(os.Args) > 2 {
-		fmt.Println("Usage: exporter [config file]")
-	}
-	if len(os.Args) == 2 {
-		configFile = os.Args[1]
-	}
 
 	config := Config{}
 	readConfig(&config, configFile)
@@ -318,10 +324,13 @@ func listAccessPoints(e *Exporter, ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(apRadioUtilization, prometheus.GaugeValue, float64(r.Utilization), strconv.Itoa(r.Band), r.Channel, r.RadioName, a.Name)
 		}
 	}
-	fmt.Println("\nmonitoring/v2/aps - HTTP Status Code:", resp.StatusCode)
+	if verbose {
 
-	for key, value := range resp.Header {
-		fmt.Printf(" (%s: %s),", key, value)
+		fmt.Println("\nmonitoring/v2/aps - HTTP Status Code:", resp.StatusCode)
+
+		for key, value := range resp.Header {
+			fmt.Printf(" (%s: %s),", key, value)
+		}
 	}
 
 }
@@ -368,10 +377,11 @@ func listMobilityControllers(e *Exporter, ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(mcUptime, prometheus.GaugeValue, float64(m.Uptime), m.Name, m.GroupName, m.Mode, m.Model, m.Site, m.Status, m.FirmwareVersion)
 	}
 
-	fmt.Println("\nmonitoring/v1/mobility_controllers - HTTP Status Code:", resp.StatusCode)
-
-	for key, value := range resp.Header {
-		fmt.Printf(" (%s: %s),", key, value)
+	if verbose {
+		fmt.Println("\nmonitoring/v1/mobility_controllers - HTTP Status Code:", resp.StatusCode)
+		for key, value := range resp.Header {
+			fmt.Printf(" (%s: %s),", key, value)
+		}
 	}
 
 }
@@ -421,10 +431,12 @@ func listSwitches(e *Exporter, ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(switchUptime, prometheus.GaugeValue, float64(s.Uptime), s.Name, strconv.Itoa(s.StackMemberID), strconv.Itoa(s.GroupID), s.GroupName, s.Site, strconv.Itoa(s.SiteID), strconv.Itoa(s.SwitchRole), s.SwitchType, s.Status, s.FirmwareVersion, s.Model)
 	}
 
-	fmt.Println("\nmonitoring/v1/switches - HTTP Status Code:", resp.StatusCode)
+	if verbose {
+		fmt.Println("\nmonitoring/v1/switches - HTTP Status Code:", resp.StatusCode)
 
-	for key, value := range resp.Header {
-		fmt.Printf(" (%s: %s),", key, value)
+		for key, value := range resp.Header {
+			fmt.Printf(" (%s: %s),", key, value)
+		}
 	}
 
 }
@@ -471,12 +483,13 @@ func listTopClients(e *Exporter, ch chan<- prometheus.Metric) {
 
 	}
 
-	fmt.Println("\nmonitoring/v1/clients - HTTP Status Code:", resp.StatusCode)
+	if verbose {
+		fmt.Println("\nmonitoring/v1/clients - HTTP Status Code:", resp.StatusCode)
 
-	for key, value := range resp.Header {
-		fmt.Printf(" (%s: %s),", key, value)
+		for key, value := range resp.Header {
+			fmt.Printf(" (%s: %s),", key, value)
+		}
 	}
-
 }
 
 func refreshToken(e *Exporter) {
