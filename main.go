@@ -246,6 +246,8 @@ func init() {
 
 func main() {
 
+	fmt.Println(time.Now().Format(time.RFC3339), "Aruba Central Exporter v1.0 is running...")
+
 	flag.Parse()
 
 	go decrementExpiresIn()
@@ -264,6 +266,7 @@ func main() {
 
 	http.Handle(exporterEndpoint, promhttp.Handler())
 
+	fmt.Println(time.Now().Format(time.RFC3339), "Server listening on port", exporterPort)
 	err := http.ListenAndServe(exporterPort, nil)
 
 	if err != nil {
