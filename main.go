@@ -90,6 +90,55 @@ type MobilityController struct {
 	Uptime                int      `json:"uptime"`
 }
 
+type SiteResponse struct {
+	Sites []Site `json:"items"`
+}
+
+type Site struct {
+	BranchCpuHigh          int     `json:"branch_cpu_high"`
+	BranchDeviceStatusDown int     `json:"branch_device_status_down"`
+	BranchDeviceStatusUp   int     `json:"branch_device_status_up"`
+	BranchMemHigh          int     `json:"branch_mem_high"`
+	CapeState              string  `json:"cape_state"`
+	CapeStateDesc          string  `json:"cape_state_dscr"`
+	CapeStateUrl           string  `json:"cape_url"`
+	ConnectedCount         int     `json:"connected_count"`
+	DeviceDown             int     `json:"device_down"`
+	DeviceHighCh24         int     `json:"device_high_ch_2_4ghz"`
+	DeviceHighCh5          int     `json:"device_high_ch_5ghz"`
+	DeviceHighCpu          int     `json:"device_high_cpu"`
+	DeviceHighMem          int     `json:"device_high_mem"`
+	DeviceHighNoise24      int     `json:"device_high_noise_2_4ghz"`
+	DeviceHighNoise5       int     `json:"device_high_noise_5ghz"`
+	DeviceUp               int     `json:"device_up"`
+	FailedCount            int     `json:"failed_count"`
+	Id                     string  `json:"id"`
+	InsightHi              int     `json:"insight_hi"`
+	InsightLo              int     `json:"insight_lo"`
+	InsightMi              int     `json:"insight_mi"`
+	Lat                    float64 `json:"lat"`
+	Long                   float64 `json:"long"`
+	Name                   string  `json:"name"`
+	PotentialIssue         bool    `json:"potential_issue"`
+	Score                  int     `json:"score"`
+	SilverPeakState        string  `json:"silverpeak_state"`
+	SilverPeakStateSummary string  `json:"silverpeak_state_summary"`
+	SilverPeakUrl          string  `json:"silverpeak_url"`
+	UserConnHealthScore    int     `json:"user_conn_health_score"`
+	WanTunnelsDown         int     `json:"wan_tunnels_down"`
+	WanTunnelsNoIssue      int     `json:"wan_tunnels_no_issue"`
+	WanUplinksDown         int     `json:"wan_uplinks_down"`
+	WanUplinksNoIssue      int     `json:"wan_uplinks_no_issue"`
+	WiredCPUHigh           int     `json:"wired_cpu_high"`
+	WiredDeviceSatusDown   int     `json:"wired_device_status_down"`
+	WiredDeviceStatusUp    int     `json:"wired_device_status_up"`
+	WiredMemHigh           int     `json:"wired_mem_high"`
+	WlanCpuHigh            int     `json:"wlan_cpu_high"`
+	WlanDeviceStatusDown   int     `json:"wlan_device_status_down"`
+	WlanDeviceStatusUp     int     `json:"wlan_device_status_up"`
+	WlanMemHigh            int     `json:"wlan_mem_high"`
+}
+
 type SwitchResponse struct {
 	Count    int      `json:"count"`
 	Switches []Switch `json:"switches"`
@@ -149,33 +198,52 @@ type Client struct {
 }
 
 var (
-	apClientCount    = prometheus.NewDesc("ap_client_count", "Number of clients connected to access point", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
-	apCpuUtilization = prometheus.NewDesc("ap_cpu_utilization", "CPU Utilization of the access point in percentge", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
-	apMemFree        = prometheus.NewDesc("ap_mem_free", "Amount of free memory of access point", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
-	apMemTotal       = prometheus.NewDesc("ap_mem_total", "Total amount of  memory of access point", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
-	apUptime         = prometheus.NewDesc("ap_uptime", "Uptime of the access point in seconds", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
+	apClientCount    = prometheus.NewDesc("aruba_ap_client_count", "Number of clients connected to access point", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
+	apCpuUtilization = prometheus.NewDesc("aruba_ap_cpu_utilization", "CPU Utilization of the access point in percentge", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
+	apMemFree        = prometheus.NewDesc("aruba_ap_mem_free", "Amount of free memory of access point", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
+	apMemTotal       = prometheus.NewDesc("aruba_ap_mem_total", "Total amount of  memory of access point", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
+	apUptime         = prometheus.NewDesc("aruba_ap_uptime", "Uptime of the access point in seconds", []string{"name", "groupName", "site", "status", "firmwareVersion", "model"}, nil)
 
-	apRadioTxPower     = prometheus.NewDesc("ap_radio_tx_power", "Radio tx power", []string{"band", "channel", "radioName", "apName"}, nil)
-	apRadioUtilization = prometheus.NewDesc("ap_radio_utilization", "Radip cpu utilization", []string{"band", "channel", "radioName", "apName"}, nil)
+	apRadioTxPower     = prometheus.NewDesc("aruba_ap_radio_tx_power", "Radio tx power", []string{"band", "channel", "radioName", "apName"}, nil)
+	apRadioUtilization = prometheus.NewDesc("aruba_ap_radio_utilization", "Radip cpu utilization", []string{"band", "channel", "radioName", "apName"}, nil)
 
-	clientRxDataBytes = prometheus.NewDesc("client_rx_data_bytes", "Volume of data received", []string{"name", "mac"}, nil)
-	clientTxDataBytes = prometheus.NewDesc("client_tx_data_bytes", "Volume of data transmitted", []string{"name", "mac"}, nil)
+	clientRxDataBytes = prometheus.NewDesc("aruba_client_rx_data_bytes", "Volume of data received", []string{"name", "mac"}, nil)
+	clientTxDataBytes = prometheus.NewDesc("aruba_client_tx_data_bytes", "Volume of data transmitted", []string{"name", "mac"}, nil)
 
-	mcCpuUtilization = prometheus.NewDesc("mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
-	mcMemFree        = prometheus.NewDesc("mc_mem_free", "Amount of free memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
-	mcMemTotal       = prometheus.NewDesc("mc_mem_total", "Total amount of  memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
-	mcUptime         = prometheus.NewDesc("mc_uptime", "Uptime of the mobility controller in seconds", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
+	mcCpuUtilization = prometheus.NewDesc("aruba_mc_cpu_utilization", "CPU Utilization of the mobility controller in percentge", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
+	mcMemFree        = prometheus.NewDesc("aruba_mc_mem_free", "Amount of free memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
+	mcMemTotal       = prometheus.NewDesc("aruba_mc_mem_total", "Total amount of  memory of mobility controller", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
+	mcUptime         = prometheus.NewDesc("aruba_mc_uptime", "Uptime of the mobility controller in seconds", []string{"name", "groupName", "mode", "model", "site", "status", "firmwareVersion"}, nil)
 
-	switchClientCount    = prometheus.NewDesc("switch_client_count", "Number of clients connected to switch", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
-	switchCpuUtilization = prometheus.NewDesc("switch_cpu_utilization", "Current Switch CPU utilization percentage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
-	switchMemFree        = prometheus.NewDesc("switch_mem_free", "Switch free memory", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
-	switchMemTotal       = prometheus.NewDesc("switch_mem_total", "Switch total memory", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
-	switchUsage          = prometheus.NewDesc("switch_usage", "Switch uptime", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
-	switchUptime         = prometheus.NewDesc("switch_uptime", "Switch usage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
+	siteConnectedCount        = prometheus.NewDesc("aruba_site_connected_count", "Number of connected devices", []string{"name", "id"}, nil)
+	siteDeviceDown            = prometheus.NewDesc("aruba_site_device_down", "Number of down devices", []string{"name", "id"}, nil)
+	siteDeviceHighCh24        = prometheus.NewDesc("aruba_site_device_high_ch_2_4ghz", "Number of devices with high 2.4ghz channel utilization", []string{"name", "id"}, nil)
+	siteDeviceHighCh5         = prometheus.NewDesc("aruba_site_device_high_ch_5ghz", "Number of devices with high 5ghz channel utilization", []string{"name", "id"}, nil)
+	siteDeviceHighCpu         = prometheus.NewDesc("aruba_site_device_high_cpu", "Number of devices with high cpu utilization", []string{"name", "id"}, nil)
+	siteDeviceHighMem         = prometheus.NewDesc("aruba_site_device_high_mem", "Number of devices with high mem utilization", []string{"name", "id"}, nil)
+	siteDeviceHighNoise24     = prometheus.NewDesc("aruba_site_device_high_noise_2_4ghz", "Number of devices with high 2.4ghz noise", []string{"name", "id"}, nil)
+	siteDeviceHighNoise5      = prometheus.NewDesc("aruba_site_device_high_noise_5ghz", "Number of devices with high 5ghz noise", []string{"name", "id"}, nil)
+	siteDeviceUp              = prometheus.NewDesc("aruba_site_device_up", "Number of up devices", []string{"name", "id"}, nil)
+	siteWiredCpuHigh          = prometheus.NewDesc("aruba_site_wired_cpu_high", "Number of wired devices with high CPU", []string{"name", "id"}, nil)
+	siteWiredDeviceStatusDown = prometheus.NewDesc("aruba_site_wired_device_status_down", "Number of wired devices up", []string{"name", "id"}, nil)
+	siteWiredDeviceStatusUp   = prometheus.NewDesc("aruba_site_wired_device_status_up", "Number of wired devices down", []string{"name", "id"}, nil)
+	siteWiredMemHigh          = prometheus.NewDesc("aruba_site_wired_mem_high", "Number of wired devices with high memory usage", []string{"name", "id"}, nil)
+	siteWlanCpuHigh           = prometheus.NewDesc("aruba_site_wlan_cpu_high", "Number of wired devices with high cpu usage", []string{"name", "id"}, nil)
+	siteWlanDeviceStatusDown  = prometheus.NewDesc("aruba_site_wlan_device_status_down", "Number of down wireless devices", []string{"name", "id"}, nil)
+	siteWlanDeviceStatusUp    = prometheus.NewDesc("aruba_site_wlan_device_status_up", "Number of down wireless devices", []string{"name", "id"}, nil)
+	siteWlanMemHigh           = prometheus.NewDesc("aruba_site_wlan_mem_high", "Number of wireless devices with high cpu", []string{"name", "id"}, nil)
+
+	switchClientCount    = prometheus.NewDesc("aruba_switch_client_count", "Number of clients connected to switch", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
+	switchCpuUtilization = prometheus.NewDesc("aruba_switch_cpu_utilization", "Current Switch CPU utilization percentage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
+	switchMemFree        = prometheus.NewDesc("aruba_switch_mem_free", "Switch free memory", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
+	switchMemTotal       = prometheus.NewDesc("aruba_switch_mem_total", "Switch total memory", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
+	switchUsage          = prometheus.NewDesc("aruba_switch_usage", "Switch uptime", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
+	switchUptime         = prometheus.NewDesc("aruba_switch_uptime", "Switch usage", []string{"name", "stackMemberId", "groupId", "groupName", "site", "siteId", "switchRole", "switchType", "status", "firmwareVersion", "model"}, nil)
 
 	expiresIn  = 0
 	configFile string
 	verbose    bool
+	version    = 1.1
 )
 
 type Exporter struct {
@@ -208,6 +276,24 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- mcMemTotal
 	ch <- mcUptime
 
+	ch <- siteConnectedCount
+	ch <- siteDeviceDown
+	ch <- siteDeviceHighCh24
+	ch <- siteDeviceHighCh5
+	ch <- siteDeviceHighCpu
+	ch <- siteDeviceHighMem
+	ch <- siteDeviceHighNoise24
+	ch <- siteDeviceHighNoise5
+	ch <- siteDeviceUp
+	ch <- siteWiredCpuHigh
+	ch <- siteWiredDeviceStatusDown
+	ch <- siteWiredDeviceStatusUp
+	ch <- siteWiredMemHigh
+	ch <- siteWlanCpuHigh
+	ch <- siteWlanDeviceStatusDown
+	ch <- siteWlanDeviceStatusUp
+	ch <- siteWlanMemHigh
+
 	ch <- switchClientCount
 	ch <- switchCpuUtilization
 	ch <- switchMemFree
@@ -229,6 +315,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	listAccessPoints(e, ch)
 	listMobilityControllers(e, ch)
 	listTopClients(e, ch)
+	listSites(e, ch)
 
 }
 
@@ -246,7 +333,7 @@ func init() {
 
 func main() {
 
-	fmt.Println(time.Now().Format(time.RFC3339), "Aruba Central Exporter v1.0 is running...")
+	fmt.Println(time.Now().Format(time.RFC3339), "Aruba Central Exporter v", version, " is running...")
 
 	flag.Parse()
 
@@ -382,6 +469,73 @@ func listMobilityControllers(e *Exporter, ch chan<- prometheus.Metric) {
 
 	if verbose {
 		fmt.Println("\nmonitoring/v1/mobility_controllers - HTTP Status Code:", resp.StatusCode)
+		for key, value := range resp.Header {
+			fmt.Printf(" (%s: %s),", key, value)
+		}
+	}
+
+}
+
+func listSites(e *Exporter, ch chan<- prometheus.Metric) {
+
+	url := e.arubaEndpoint + "branchhealth/v1/site?limit=100&column=device_total&order=desc"
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+e.arubaAccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	// Parse JSON
+
+	var siteResponse SiteResponse
+
+	if err := json.Unmarshal(body, &siteResponse); err != nil {
+		fmt.Println("Error parsing JSON:", err)
+		return
+	}
+
+	for _, s := range siteResponse.Sites {
+
+		ch <- prometheus.MustNewConstMetric(siteConnectedCount, prometheus.GaugeValue, float64(s.ConnectedCount), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceDown, prometheus.GaugeValue, float64(s.DeviceDown), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceHighCh24, prometheus.GaugeValue, float64(s.DeviceHighCh24), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceHighCh5, prometheus.GaugeValue, float64(s.DeviceHighCh5), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceHighCpu, prometheus.GaugeValue, float64(s.DeviceHighCpu), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceHighMem, prometheus.GaugeValue, float64(s.DeviceHighMem), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceHighNoise24, prometheus.GaugeValue, float64(s.DeviceHighNoise24), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceHighNoise5, prometheus.GaugeValue, float64(s.DeviceHighNoise5), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteDeviceUp, prometheus.GaugeValue, float64(s.DeviceUp), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWiredCpuHigh, prometheus.GaugeValue, float64(s.WiredCPUHigh), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWiredDeviceStatusDown, prometheus.GaugeValue, float64(s.WiredDeviceSatusDown), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWiredDeviceStatusUp, prometheus.GaugeValue, float64(s.WiredDeviceStatusUp), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWiredMemHigh, prometheus.GaugeValue, float64(s.WiredMemHigh), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWlanCpuHigh, prometheus.GaugeValue, float64(s.WiredCPUHigh), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWlanDeviceStatusDown, prometheus.GaugeValue, float64(s.WlanDeviceStatusDown), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWlanDeviceStatusUp, prometheus.GaugeValue, float64(s.WlanDeviceStatusDown), s.Name, s.Id)
+		ch <- prometheus.MustNewConstMetric(siteWlanMemHigh, prometheus.GaugeValue, float64(s.WlanMemHigh), s.Name, s.Id)
+
+	}
+
+	if verbose {
+		fmt.Println("\nbranchhealth/v1/site - HTTP Status Code:", resp.StatusCode)
 		for key, value := range resp.Header {
 			fmt.Printf(" (%s: %s),", key, value)
 		}
