@@ -59,10 +59,29 @@ The arubaEndpoint, exporterEndpoint and exporterPort values should also be amend
 - ap_mem_total
 - ap_uptime
 
+<h4>/branchhealth/v1/site:</h4>
+- aruba_site_connected_count
+- aruba_site_device_down
+- aruba_site_device_high_ch_2_4ghz
+- aruba_site_device_high_ch_5ghz
+- aruba_site_device_high_cpu
+- aruba_site_device_high_mem
+- aruba_site_device_high_noise_2_4ghz
+- aruba_site_device_high_noise_5ghz
+- aruba_site_device_up
+- aruba_site_wired_cpu_high
+- aruba_site_wired_device_status_down
+- aruba_site_wired_device_status_up
+- aruba_site_wired_mem_high
+- aruba_site_wlan_cpu_high
+- aruba_site_wlan_device_status_down
+- aruba_site_wlan_device_status_up
+- aruba_site_wlan_mem_high
+
 
 ***
 
 <h3>Prometheus Configuration:</h3>
 
-For Prometheus configuration, it should be noted that the scraping interval greatly depends on the daily API call limit which difers per organisation. Each time the data is scraped, 4 API calls are made, inlcuding an additional 12 API calls per day for refresh tokens
+For Prometheus configuration, it should be noted that the scraping interval greatly depends on the daily API call limit which difers per organisation. Each time the data is scraped, 5 API calls are made, inlcuding an additional 12 API calls per day for refresh tokens. For example, setting the interval at 30 seconds should result in 14,412 calls per day.
 
