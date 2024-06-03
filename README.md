@@ -60,6 +60,7 @@ The arubaEndpoint, exporterEndpoint and exporterPort values should also be amend
 - ap_uptime
 
 <h4>/branchhealth/v1/site:</h4>
+
 - aruba_site_connected_count
 - aruba_site_device_down
 - aruba_site_device_high_ch_2_4ghz
