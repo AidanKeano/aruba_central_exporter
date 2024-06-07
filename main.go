@@ -340,11 +340,12 @@ func main() {
 	go decrementExpiresIn()
 
 	config := Config{}
-	readConfig(&config, configFile)
+	response := Response{}
+	authenticate(&config, configFile, &response)
 
 	arubaEndpoint := config.ArubaEndpoint
-	arubaAccessToken := config.ArubaTokens[0].ArubaAccessToken
-	arubaRefreshToken := config.ArubaTokens[1].ArubaRefreshToken
+	arubaAccessToken := response.AccessToken
+	arubaRefreshToken := response.RefreshToken
 	exporterEndpoint := config.ExporterConfig[0].ExporterEndpoint
 	exporterPort := config.ExporterConfig[1].ExporterPort
 
@@ -696,23 +697,6 @@ func refreshToken(e *Exporter) {
 
 		e.arubaAccessToken = tokenResponse.AccessToken
 		e.arubaRefreshToken = tokenResponse.RefreshToken
-
-		configData := []byte(`arubaEndpoint: "` + config.ArubaEndpoint + `"
-arubaTokens:
-  - arubaAccessToken: "` + e.arubaAccessToken + `"
-  - arubaRefreshToken: "` + e.arubaRefreshToken + `"
-arubaApplicationCredentials:
-  - clientId: "` + config.ArubaApplicationCredentials[0].ClientID + `"
-  - clientSecret: "` + config.ArubaApplicationCredentials[1].ClientSecret + `"
-exporterConfig:
-  - exporterEndpoint: "` + config.ExporterConfig[0].ExporterEndpoint + `"
-  - exporterPort: "` + config.ExporterConfig[1].ExporterPort + `" `)
-
-		err = ioutil.WriteFile("exporter_config.yaml", configData, 0644)
-
-		if err != nil {
-			fmt.Println("Error writing config file:", err)
-		}
 	}
 
 }

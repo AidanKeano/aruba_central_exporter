@@ -7,20 +7,22 @@
   		-v
 			Enable verbose mode - prints HTTP status code and response headers to the terminal
 
-If no configuration file is specified then the default of exporter_config.yaml will be assumed. The application reads the necessary credentials and configuration options from this file, and also writes the new token values to the file (as each access token expires after 2 hours)
+If no configuration file is specified then the default of exporter_config.yaml will be assumed. The application reads the necessary credentials and configuration options from this file, and also uses the credentials to obtain acess tokens with the OAuth2.0 Grant Mechanism.
 
 <h4>exporter_config.yaml</h4>
 
 	arubaEndpoint: "https://apigw-eucentral3.central.arubanetworks.com/"
-	arubaTokens:
-	  - arubaAccessToken: "aruba-access-token-goes-here"
-	  - arubaRefreshToken: "aruba-refresh-token-goes-here"
+	arubaUser:
+	  - user: "aruba-application-user-goes-here"
+	  - password: "aruba-application-user-goes-here"
 	arubaApplicationCredentials:
 	  - clientId: "aruba-application-client-id-goes-here"
 	  - clientSecret: "aruba-application-client-secret-goes-here"
+	  - customerId: "aruba-customer-id-goes-here"
 	exporterConfig:
 	  - exporterEndpoint: "/metrics"
 	  - exporterPort: ":8080"
+
 
 The arubaEndpoint, exporterEndpoint and exporterPort values should also be amended to fit the required configuration.
 
